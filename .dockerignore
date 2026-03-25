@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+.git/
+.gitignore
+.vscode/
+.idea/
+_diag_test.png
+generate-diagrams.ps1
+functional-diagram.svg
+diagrams/

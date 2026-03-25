@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SLM Chamber Visualizer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+  <script async src="https://unpkg.com/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.177.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.177.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="control-panel">
+      <div>
+        <p class="eyebrow">SLM Printer Chamber</p>
+        <h1>Визуальное моделирование внутренней камеры</h1>
+        <p class="panel-text">
+          Сцена показывает стол построения, сканатор, траекторию луча и виртуальную камеру.
+          Параметры сгруппированы по категориям для настройки сцены, сканатора и камеры.
+        </p>
+      </div>
+
+      <section class="settings-section" data-collapsible>
+        <button class="section-toggle" type="button" data-section-toggle aria-expanded="true">
+          <span class="section-tag">Параметры сцены</span>
+          <span class="section-chevron" aria-hidden="true">▾</span>
+        </button>
+        <div class="section-body">
+          <div class="control-group">
+          <label>Размерность сетки</label>
+          <div class="grid-inputs">
+            <input id="gridCols" type="number" min="4" max="32" step="1" value="12">
+            <span>x</span>
+            <input id="gridRows" type="number" min="4" max="32" step="1" value="12">
+          </div>
+        </div>
+
+          <div class="control-group">
+          <label for="crossSize">Размер крестиков</label>
+          <input id="crossSize" type="range" min="0.08" max="0.42" step="0.01" value="0.18">
+          <div class="range-meta">
+            <span>Мелкие</span>
+            <strong id="crossSizeValue">0.18</strong>
+            <span>Крупные</span>
+          </div>
+        </div>
+
+          <div class="export-row">
+            <span class="export-label">Экспорт параметров сцены</span>
+            <button id="exportSceneParams" class="icon-button" type="button" title="Выгрузить параметры сцены" aria-label="Выгрузить параметры сцены">
+              <svg viewBox="0 0 24 24"><path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.29a1 1 0 1 1 1.4 1.41l-4 3.99a1 1 0 0 1-1.4 0l-4-3.99a1 1 0 0 1 1.4-1.41L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1Z"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="settings-section" data-collapsible>
+        <button class="section-toggle" type="button" data-section-toggle aria-expanded="true">
+          <span class="section-tag">Дисторсия сканатора</span>
+          <span class="section-chevron" aria-hidden="true">▾</span>
+        </button>
+        <div class="section-body">
+          <div class="control-group">
+          <label for="distortionType">Тип дисторсии</label>
+          <select id="distortionType">
+            <option value="none">Без дисторсии</option>
+            <option value="barrel">Бочка</option>
+            <option value="pincushion">Подушка</option>
+          </select>
+        </div>
+
+          <div class="control-group">
+          <label for="distortionStrength">Интенсивность дисторсии</label>
+          <input id="distortionStrength" type="range" min="0" max="1.25" step="0.05" value="0.34">
+          <div class="range-meta">
+            <span>Слабая</span>
+            <strong id="distortionStrengthValue">0.34</strong>
+            <span>Сильная</span>
+          </div>
+        </div>
+
+          <div class="coeff-grid">
+          <div class="coeff-card"><span>k1</span><strong id="scannerK1">0.0000</strong></div>
+          <div class="coeff-card"><span>k2</span><strong id="scannerK2">0.0000</strong></div>
+          <div class="coeff-card"><span>p1</span><strong id="scannerP1">0.0000</strong></div>
+          <div class="coeff-card"><span>p2</span><strong id="scannerP2">0.0000</strong></div>
+          <div class="coeff-card"><span>k3</span><strong id="scannerK3">0.0000</strong></div>
+        </div>
+
+          <div class="export-row">
+            <span class="export-label">Экспорт параметров сканатора</span>
+            <button id="exportScannerDistortion" class="icon-button" type="button" title="Выгрузить параметры дисторсии линзы сканатора" aria-label="Выгрузить параметры дисторсии линзы сканатора">
+              <svg viewBox="0 0 24 24"><path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.29a1 1 0 1 1 1.4 1.41l-4 3.99a1 1 0 0 1-1.4 0l-4-3.99a1 1 0 0 1 1.4-1.41L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1Z"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="settings-section" data-collapsible>
+        <button class="section-toggle" type="button" data-section-toggle aria-expanded="true">
+          <span class="section-tag">Параметры камеры</span>
+          <span class="section-chevron" aria-hidden="true">▾</span>
+        </button>
+        <div class="section-body">
+          <div class="control-group">
+            <label for="cameraArcAngle">Положение камеры по дуге</label>
+            <input id="cameraArcAngle" type="range" min="-70" max="70" step="1" value="0">
+            <div class="range-meta">
+              <span>Влево</span>
+              <strong id="cameraArcAngleValue">0°</strong>
+              <span>Вправо</span>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label for="cameraArcElevation">Положение камеры по вертикальной дуге</label>
+            <input id="cameraArcElevation" type="range" min="-28" max="28" step="1" value="0">
+            <div class="range-meta">
+              <span>Ниже</span>
+              <strong id="cameraArcElevationValue">0°</strong>
+              <span>Выше</span>
+            </div>
+          </div>
+
+          <div class="button-row">
+            <button id="resetCameraArc" class="secondary-button wide-button" type="button">Вернуть камеру</button>
+          </div>
+
+          <div class="control-group">
+          <label for="cameraK1">Радиальная дисторсия камеры k1</label>
+          <input id="cameraK1" type="range" min="-0.45" max="0.45" step="0.01" value="-0.12">
+          <div class="range-meta">
+            <span>Подушка</span>
+            <strong id="cameraK1Value">-0.12</strong>
+            <span>Бочка</span>
+          </div>
+        </div>
+
+          <div class="control-group">
+          <label for="cameraK2">Радиальная дисторсия камеры k2</label>
+          <input id="cameraK2" type="range" min="-0.25" max="0.25" step="0.01" value="0.02">
+          <div class="range-meta">
+            <span>Отрицат.</span>
+            <strong id="cameraK2Value">0.02</strong>
+            <span>Положит.</span>
+          </div>
+        </div>
+
+          <div class="control-group">
+          <label for="cameraP1">Тангенциальная дисторсия камеры p1</label>
+          <input id="cameraP1" type="range" min="-0.08" max="0.08" step="0.002" value="0">
+          <div class="range-meta">
+            <span>-</span>
+            <strong id="cameraP1Value">0.000</strong>
+            <span>+</span>
+          </div>
+        </div>
+
+          <div class="control-group">
+          <label for="cameraP2">Тангенциальная дисторсия камеры p2</label>
+          <input id="cameraP2" type="range" min="-0.08" max="0.08" step="0.002" value="0">
+          <div class="range-meta">
+            <span>-</span>
+            <strong id="cameraP2Value">0.000</strong>
+            <span>+</span>
+          </div>
+        </div>
+
+          <div class="coeff-grid">
+          <div class="coeff-card"><span>k1</span><strong id="cameraCoeffK1">-0.1200</strong></div>
+          <div class="coeff-card"><span>k2</span><strong id="cameraCoeffK2">0.0200</strong></div>
+          <div class="coeff-card"><span>p1</span><strong id="cameraCoeffP1">0.0000</strong></div>
+          <div class="coeff-card"><span>p2</span><strong id="cameraCoeffP2">0.0000</strong></div>
+          <div class="coeff-card"><span>k3</span><strong id="cameraCoeffK3">0.0000</strong></div>
+        </div>
+
+          <div class="export-row">
+            <span class="export-label">Экспорт параметров камеры</span>
+            <button id="exportCameraDistortion" class="icon-button" type="button" title="Выгрузить параметры дисторсии камеры" aria-label="Выгрузить параметры дисторсии камеры">
+              <svg viewBox="0 0 24 24"><path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.29a1 1 0 1 1 1.4 1.41l-4 3.99a1 1 0 0 1-1.4 0l-4-3.99a1 1 0 0 1 1.4-1.41L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1Z"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="settings-section" data-collapsible>
+        <button class="section-toggle" type="button" data-section-toggle aria-expanded="true">
+          <span class="section-tag">Моделирование</span>
+          <span class="section-chevron" aria-hidden="true">▾</span>
+        </button>
+        <div class="section-body">
+          <div class="control-group">
+          <label for="speedSlider">Скорость моделирования</label>
+          <input id="speedSlider" type="range" min="0.25" max="4" step="0.25" value="1">
+          <div class="range-meta">
+            <span>Медленно</span>
+            <strong id="speedValue">1.00x</strong>
+            <span>Быстро</span>
+          </div>
+        </div>
+
+          <div class="button-row">
+          <button id="toggleSimulation" class="primary-button" type="button">Пауза</button>
+          <button id="resetSimulation" class="secondary-button" type="button">Сброс</button>
+        </div>
+
+          <div class="button-row">
+          <button id="captureCamera" class="secondary-button wide-button" type="button">Сохранить снимок с камеры</button>
+        </div>
+        </div>
+      </section>
+
+      <div class="status-card">
+        <p>Состояние</p>
+        <strong id="statusText">Симуляция выполняется</strong>
+        <span id="statsText">Метки: 0</span>
+      </div>
+    </aside>
+
+    <main class="scene-panel">
+      <div class="scene-head">
+        <div>
+          <p class="eyebrow">Interactive 3D Scene</p>
+          <h2>Камера построения SLM-принтера</h2>
+        </div>
+        <div class="legend">
+          <span><i class="legend-dot scanner"></i>Сканатор</span>
+          <span><i class="legend-dot laser"></i>Луч</span>
+          <span><i class="legend-dot marks"></i>Метки</span>
+          <span><i class="legend-dot camera"></i>Камера</span>
+        </div>
+      </div>
+
+      <div id="sceneViewport" class="scene-viewport">
+        <div class="view-shortcuts">
+          <button class="view-shortcut" type="button" data-view-preset="top" title="Верх">
+            <span class="shortcut-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 4 4 8l8 4 8-4-8-4Zm0 7.6-8-4V16l8 4 8-4V7.6l-8 4Z"/></svg>
+            </span>
+            <span>Верх</span>
+          </button>
+          <button class="view-shortcut" type="button" data-view-preset="iso" title="Изометрия">
+            <span class="shortcut-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3 4 7.5V16.5L12 21l8-4.5V7.5L12 3Zm0 2.3 5.7 3.2L12 11.7 6.3 8.5 12 5.3Zm-6 4.7 5 2.8v5.8l-5-2.8V10Zm7 8.6v-5.8l5-2.8v5.8l-5 2.8Z"/></svg>
+            </span>
+            <span>Изометрия</span>
+          </button>
+          <button id="toggleView" class="view-shortcut" type="button" title="Камера построения">
+            <span class="shortcut-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 8h3l1.3-2h7.4L17 8h3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Zm8 8a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0-2a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"/></svg>
+            </span>
+            <span>Камера</span>
+          </button>
+        </div>
+      </div>
+      <canvas id="cameraCaptureCanvas" class="capture-canvas"></canvas>
+    </main>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
