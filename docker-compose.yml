@@ -1,0 +1,27 @@
+services:
+  slm-chamber:
+    container_name: slm-chamber
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      SLM_API_HOST: 0.0.0.0
+      SLM_API_PORT: 8000
+    volumes:
+      - slm_chamber_snapshots:/app/snapshots
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/config')"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  slm_chamber_snapshots:
