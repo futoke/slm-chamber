@@ -4,9 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    restart: unless-stopped
-    ports:
-      - "8000:8000"
+    restart: always
     environment:
       SLM_API_HOST: 0.0.0.0
       SLM_API_PORT: 8000
@@ -22,6 +20,12 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    networks:
+      - proxy-network
+
+networks:
+  proxy-network:
+    external: true
 
 volumes:
   slm_chamber_snapshots:
